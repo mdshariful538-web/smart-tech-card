@@ -37,6 +37,72 @@ function extractCode(text) {
   return match ? match[1] : '*#21#';
 }
 
+// Intelligent Converter: If English slug or messy title is passed, convert to powerful Bengali headline & template
+function sanitizeInput(rawText) {
+  if (!rawText || rawText.trim() === '') {
+    return {
+      headline: 'আপনার কল কি গোপনে অন্য কোথাও যাচ্ছে? এখনই ডায়াল করে চেক করুন!',
+      template: 'dialer',
+      code: '*#21#'
+    };
+  }
+
+  const clean = rawText.trim();
+  const lower = clean.toLowerCase();
+
+  // If already pure Bengali
+  if (hasBengali(clean)) {
+    let template = 'social';
+    let code = '*#21#';
+
+    if (clean.includes('*') || clean.includes('#') || lower.includes('কোড') || lower.includes('ডায়াল') || lower.includes('ডায়াল') || lower.includes('ফরওয়ার্ড') || lower.includes('ফরওয়ার্ড')) {
+      template = 'dialer';
+      code = extractCode(clean);
+    } else if (lower.includes('বিকাশ') || lower.includes('নগদ') || lower.includes('ওটিপি') || lower.includes('otp') || lower.includes('স্ক্যাম') || lower.includes('প্রতারণা') || lower.includes('ফাঁদ') || lower.includes('জালিয়াতি')) {
+      template = 'scam';
+    } else if (lower.includes('ai') || lower.includes('এআই') || lower.includes('chatgpt') || lower.includes('কম্পিউটার') || lower.includes('উইন্ডোজ') || lower.includes('পিসি') || lower.includes('ল্যাপটপ')) {
+      template = 'ai';
+    }
+    return { headline: clean, template, code };
+  }
+
+  // If English slug was passed by AI (e.g. "secret-dial-code-smartphone-3d", "otp-fraud-scam", etc.)
+  if (lower.includes('dial') || lower.includes('code') || lower.includes('call') || lower.includes('forward') || lower.includes('secret') || lower.includes('phone') || lower.includes('smartphone')) {
+    return {
+      headline: 'আপনার কল কি গোপনে অন্য কোথাও যাচ্ছে? এখনই ডায়াল করে চেক করুন!',
+      template: 'dialer',
+      code: extractCode(clean) || '*#21#'
+    };
+  }
+  if (lower.includes('scam') || lower.includes('fraud') || lower.includes('otp') || lower.includes('bank') || lower.includes('bkash') || lower.includes('hack') || lower.includes('security')) {
+    return {
+      headline: 'বিকাশ ও ওটিপি প্রতারণা থেকে বাঁচতে? ৩টি জরুরি নিয়ম জেনে রাখুন!',
+      template: 'scam',
+      code: ''
+    };
+  }
+  if (lower.includes('ai') || lower.includes('chatgpt') || lower.includes('pc') || lower.includes('windows') || lower.includes('computer')) {
+    return {
+      headline: 'যেকোনো ছবির ব্যাকগ্রাউন্ড রিমুভ করুন? মাত্র ১ ক্লিকে একদম ফ্রিতে!',
+      template: 'ai',
+      code: ''
+    };
+  }
+  if (lower.includes('whatsapp') || lower.includes('chat') || lower.includes('message')) {
+    return {
+      headline: 'হোয়াটসঅ্যাপে অচেনা নাম্বার থেকে কল? বন্ধ করার গোপন সেটিংস!',
+      template: 'social',
+      code: ''
+    };
+  }
+
+  return {
+    headline: 'স্মার্টফোনের জরুরি সাইবার সিকিউরিটি সেটিংস? আজই জেনে নিন!',
+    template: 'dialer',
+    code: '*#21#'
+  };
+}
+
 // -------------------------------------------------------------
 // TEMPLATE 1: SMARTPHONE DIALER CODE (For Secret Codes)
 // -------------------------------------------------------------
@@ -377,7 +443,6 @@ function renderSocialCard({ brand, headline }) {
     ctx.textBaseline = 'middle';
     ctx.fillText('f', 24, 28);
   } else {
-    // Shield
     ctx.beginPath();
     ctx.moveTo(0, -72); ctx.lineTo(60, -42); ctx.lineTo(50, 32); ctx.lineTo(0, 72); ctx.lineTo(-50, 32); ctx.lineTo(-60, -42);
     ctx.closePath();
@@ -769,56 +834,33 @@ function renderAiCard({ headline }) {
 }
 
 // -------------------------------------------------------------
-// MASTER ROUTER: Auto-detects or uses requested template
+// MASTER ROUTER: Auto-detects, sanitizes and selects template
 // -------------------------------------------------------------
-function renderSmartCard({ headline, requestedTemplate, codeParam }) {
-  const text = headline || 'স্মার্টফোনের জরুরি সাইবার সিকিউরিটি সেটিংস? আজই জেনে নিন!';
-  const lower = text.toLowerCase();
+function renderSmartCard({ rawTitle, requestedTemplate, codeParam }) {
+  const parsed = sanitizeInput(rawTitle);
+  const activeTemplate = requestedTemplate || parsed.template;
+  const activeHeadline = parsed.headline;
+  const activeCode = codeParam || parsed.code;
 
-  // 1. Explicit template request
-  if (requestedTemplate === 'dialer') {
-    return renderDialerCard({ code: codeParam || extractCode(text), headline: text });
+  if (activeTemplate === 'dialer') {
+    return renderDialerCard({ code: activeCode, headline: activeHeadline });
   }
-  if (requestedTemplate === 'scam') {
-    return renderScamCard({ headline: text });
+  if (activeTemplate === 'scam') {
+    return renderScamCard({ headline: activeHeadline });
   }
-  if (requestedTemplate === 'ai' || requestedTemplate === 'ai_pc') {
-    return renderAiCard({ headline: text });
-  }
-  if (requestedTemplate === 'social') {
-    const isWa = lower.includes('whatsapp') || lower.includes('হোয়াটসঅ্যাপ');
-    const brand = isWa ? {
-      name: 'whatsapp', tag: 'হোয়াটসঅ্যাপ টিপস', color: '#00A843', lightColor: '#25D366', darkColor: '#007A30', glow: 'rgba(0, 168, 67, 0.18)'
-    } : {
-      name: 'facebook', tag: 'ফেসবুক নিরাপত্তা', color: '#1877F2', lightColor: '#4294FF', darkColor: '#0C53B7', glow: 'rgba(24, 119, 242, 0.18)'
-    };
-    return renderSocialCard({ brand, headline: text });
+  if (activeTemplate === 'ai' || activeTemplate === 'ai_pc') {
+    return renderAiCard({ headline: activeHeadline });
   }
 
-  // 2. Intelligent Auto-detection from Headline
-  // A. Secret Codes (e.g. *#21#, ##002#, কোড, ডায়াল)
-  if (text.includes('*') || text.includes('#') || lower.includes('কোড') || lower.includes('ডায়াল') || lower.includes('ডায়াল')) {
-    return renderDialerCard({ code: codeParam || extractCode(text), headline: text });
-  }
-
-  // B. Financial & Scam Alerts (বিকাশ, নগদ, ওটিপি, স্ক্যাম, প্রতারণা, ফিশিং)
-  if (lower.includes('বিকাশ') || lower.includes('নগদ') || lower.includes('ওটিপি') || lower.includes('otp') || lower.includes('স্ক্যাম') || lower.includes('প্রতারণা') || lower.includes('ফাঁদ') || lower.includes('জালিয়াতি')) {
-    return renderScamCard({ headline: text });
-  }
-
-  // C. AI & Computer Hacks (ai, chatgpt, রোবট, এআই, কম্পিউটার, উইন্ডোজ, পিসি)
-  if (lower.includes('ai') || lower.includes('এআই') || lower.includes('chatgpt') || lower.includes('কম্পিউটার') || lower.includes('উইন্ডোজ') || lower.includes('পিসি') || lower.includes('ল্যাপটপ')) {
-    return renderAiCard({ headline: text });
-  }
-
-  // D. Social Media & Messaging (WhatsApp, Facebook, etc.)
+  // Default Social
+  const lower = activeHeadline.toLowerCase();
   const isFb = lower.includes('facebook') || lower.includes('ফেসবুক') || lower.includes('মেটা') || lower.includes('আইডি');
   const brand = isFb ? {
     name: 'facebook', tag: 'ফেসবুক নিরাপত্তা', color: '#1877F2', lightColor: '#4294FF', darkColor: '#0C53B7', glow: 'rgba(24, 119, 242, 0.18)'
   } : {
     name: 'whatsapp', tag: 'হোয়াটসঅ্যাপ টিপস', color: '#00A843', lightColor: '#25D366', darkColor: '#007A30', glow: 'rgba(0, 168, 67, 0.18)'
   };
-  return renderSocialCard({ brand, headline: text });
+  return renderSocialCard({ brand, headline: activeHeadline });
 }
 
 // Health Check
@@ -829,11 +871,11 @@ app.get('/', (req, res) => {
 // Dynamic Card Endpoint
 app.get(['/card', '/card.jpg', '/image.jpg'], (req, res) => {
   try {
-    const headline = req.query.title || 'ফোনের কল ফরোয়ার্ডিং চেক করার কোড *#21#? এখনই দেখে নিন!';
+    const rawTitle = req.query.title || 'ফোনের কল ফরোয়ার্ডিং চেক করার কোড *#21#? এখনই দেখে নিন!';
     const requestedTemplate = req.query.template;
     const codeParam = req.query.code;
 
-    const imageBuffer = renderSmartCard({ headline, requestedTemplate, codeParam });
+    const imageBuffer = renderSmartCard({ rawTitle, requestedTemplate, codeParam });
     res.set({
       'Content-Type': 'image/jpeg',
       'Content-Length': imageBuffer.length,
