@@ -6,9 +6,11 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Register Bengali Fonts
 GlobalFonts.registerFromPath(path.join(__dirname, 'HindSiliguri-Bold.ttf'), 'HindSiliguri');
 GlobalFonts.registerFromPath(path.join(__dirname, 'HindSiliguri-SemiBold.ttf'), 'HindSiliguriSemiBold');
 
+// High-Res Photography Backgrounds (CDN)
 const BACKGROUND_URLS = {
   mobile: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1080&h=700&fit=crop&q=85',
   security: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1080&h=700&fit=crop&q=85',
@@ -59,7 +61,8 @@ function sanitizeHeadline(text) {
   return clean;
 }
 
-async function renderCard({ headline, category = 'জরুরি টিপস', subtitle }) {
+// Crisp Pro Media Split-Card (Zero Blur)
+async function renderCard({ headline, category = 'জরুরি সতর্কতা', subtitle }) {
   const width = 1080;
   const height = 1080;
   const canvas = createCanvas(width, height);
@@ -81,24 +84,24 @@ async function renderCard({ headline, category = 'জরুরি টিপস',
     bgImg = backgrounds['laptop'] || bgImg;
   }
 
-  // Solid Crisp Dark Base
+  // 1. Solid Dark Background
   ctx.fillStyle = '#070b14';
   ctx.fillRect(0, 0, width, height);
 
-  // Top Section: Crisp Photography (580px)
+  // 2. Top Image Section (Height: 580px - Bright & Crystal Clear)
   const imgH = 580;
   if (bgImg) {
     ctx.drawImage(bgImg, 0, 0, width, imgH);
   }
 
-  // Smooth clean transition
+  // Smooth Clean Transition
   const blend = ctx.createLinearGradient(0, imgH - 120, 0, imgH);
   blend.addColorStop(0, 'rgba(7, 11, 20, 0)');
   blend.addColorStop(1, '#070b14');
   ctx.fillStyle = blend;
   ctx.fillRect(0, imgH - 120, width, 120);
 
-  // Solid Red Alert Badge (Sharp, No Blurry Glow)
+  // Solid Red Alert Badge (Sharp, No Blur!)
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(50, 40, 210, 50, 10);
@@ -128,10 +131,10 @@ async function renderCard({ headline, category = 'জরুরি টিপস',
   ctx.fillText('SMART TECH BANGLA', width - 175, 74);
   ctx.restore();
 
-  // Bottom Content Card Section
+  // 3. Bottom Content Card Section
   const bottomY = imgH;
 
-  // Sharp Cyan Accent Divider
+  // Sharp Cyan Divider
   const lineGrad = ctx.createLinearGradient(50, bottomY, width - 50, bottomY);
   lineGrad.addColorStop(0, 'rgba(0, 229, 255, 0)');
   lineGrad.addColorStop(0.5, '#00e5ff');
@@ -143,7 +146,7 @@ async function renderCard({ headline, category = 'জরুরি টিপস',
   ctx.lineTo(width - 50, bottomY);
   ctx.stroke();
 
-  // Headline Processing
+  // Headline
   const words = cleanHeadline.split(' ');
   let line1 = '';
   let line2 = '';
@@ -155,7 +158,7 @@ async function renderCard({ headline, category = 'জরুরি টিপস',
     line2 = words.slice(mid).join(' ');
   }
 
-  // Sharp Two-Tone Headline
+  // Razor Sharp Typography
   ctx.save();
   ctx.textAlign = 'center';
   ctx.font = 'bold 54px HindSiliguri';
@@ -175,7 +178,7 @@ async function renderCard({ headline, category = 'জরুরি টিপস',
   }
   ctx.restore();
 
-  // Sharp Flat CTA Button
+  // Sharp Flat Button (Zero Blur!)
   const actionText = subtitle || 'বিস্তারিত সমাধান ও নিয়ম জানতে ক্যাপশনটি পড়ুন >>';
   ctx.save();
   const ctaY = bottomY + 250;
@@ -211,14 +214,16 @@ async function renderCard({ headline, category = 'জরুরি টিপস',
   return canvas.toBuffer('image/jpeg', { quality: 0.95 });
 }
 
+// Health Check
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Smart Tech Bangla Pro Card Generator is running!' });
 });
 
+// Dynamic Card Endpoint
 app.get('/card', async (req, res) => {
   try {
     const headline = req.query.title || 'স্মার্টফোনের জরুরি সাইবার টিপস! এখনই জেনে রাখুন';
-    const category = req.query.category || 'জরুরি টিপস';
+    const category = req.query.category || 'জরুরি সতর্কতা';
     const subtitle = req.query.subtitle;
 
     const imageBuffer = await renderCard({ headline, category, subtitle });
