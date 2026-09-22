@@ -219,16 +219,20 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Smart Tech Bangla Pro Card Generator is running!' });
 });
 
-// Dynamic Card Endpoint
-app.get('/card', async (req, res) => {
+// Dynamic Card Endpoint (Supports /card, /card.jpg, and /image.jpg for Instagram Graph API)
+app.get(['/card', '/card.jpg', '/image.jpg'], async (req, res) => {
   try {
     const headline = req.query.title || 'স্মার্টফোনের জরুরি সাইবার টিপস! এখনই জেনে রাখুন';
     const category = req.query.category || 'জরুরি সতর্কতা';
     const subtitle = req.query.subtitle;
 
     const imageBuffer = await renderCard({ headline, category, subtitle });
-    res.set('Content-Type', 'image/jpeg');
-    res.set('Cache-Control', 'public, max-age=3600');
+    res.set({
+      'Content-Type': 'image/jpeg',
+      'Content-Length': imageBuffer.length,
+      'Cache-Control': 'public, max-age=3600',
+      'Accept-Ranges': 'bytes'
+    });
     res.send(imageBuffer);
   } catch (err) {
     console.error('Render error:', err);
