@@ -6,11 +6,9 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Register Bengali Fonts
 GlobalFonts.registerFromPath(path.join(__dirname, 'HindSiliguri-Bold.ttf'), 'HindSiliguri');
 GlobalFonts.registerFromPath(path.join(__dirname, 'HindSiliguri-SemiBold.ttf'), 'HindSiliguriSemiBold');
 
-// High-Res Cinematic Tech Backgrounds (CDN)
 const BACKGROUND_URLS = {
   mobile: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1080&h=1080&fit=crop&q=80',
   security: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1080&h=1080&fit=crop&q=80',
@@ -25,7 +23,6 @@ async function preloadImages() {
   for (const [key, remoteUrl] of Object.entries(BACKGROUND_URLS)) {
     try {
       backgrounds[key] = await loadImage(remoteUrl);
-      console.log(`Preloaded background: ${key}`);
     } catch (err) {}
   }
 }
@@ -103,7 +100,7 @@ async function renderCard({ headline, category = 'জরুরি সতর্�
   ctx.fillStyle = topGlow;
   ctx.fillRect(0, 0, width, height);
 
-  // Top Left: Alert Pill Badge
+  // Top Left Alert Pill
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(60, 60, 270, 56, 28);
@@ -126,7 +123,7 @@ async function renderCard({ headline, category = 'জরুরি সতর্�
   ctx.fillText(badgeText, 118, 96);
   ctx.restore();
 
-  // Top Right: Branding Badge
+  // Top Right Branding
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(width - 320, 60, 260, 56, 28);
@@ -142,7 +139,7 @@ async function renderCard({ headline, category = 'জরুরি সতর্�
   ctx.fillText('SMART TECH BANGLA', width - 190, 96);
   ctx.restore();
 
-  // Center Emblem: Glowing Cyber Shield
+  // Center Shield Emblem
   ctx.save();
   const iconY = 320;
   ctx.beginPath();
@@ -185,7 +182,7 @@ async function renderCard({ headline, category = 'জরুরি সতর্�
   ctx.fill();
   ctx.restore();
 
-  // Bold Two-Tone Bengali Headline
+  // Headline
   const words = cleanHeadline.split(' ');
   let line1 = '';
   let line2 = '';
@@ -205,9 +202,9 @@ async function renderCard({ headline, category = 'জরুরি সতর্�
   ctx.shadowOffsetY = 8;
 
   if (line2) {
-    ctx.fillStyle = '#ffe600'; // Golden Yellow
+    ctx.fillStyle = '#ffe600';
     ctx.fillText(line1, width * 0.5, 520);
-    ctx.fillStyle = '#ffffff'; // Pure White
+    ctx.fillStyle = '#ffffff';
     ctx.fillText(line2, width * 0.5, 608);
   } else {
     ctx.fillStyle = '#ffe600';
@@ -215,7 +212,7 @@ async function renderCard({ headline, category = 'জরুরি সতর্�
   }
   ctx.restore();
 
-  // Subtitle / Action Hook Pill
+  // Subtitle Hook
   const actionText = subtitle || 'স্ক্যামারদের ফাঁদ থেকে বাঁচতে পুরো পোস্টটি পড়ুন >>';
   ctx.save();
   ctx.beginPath();
@@ -250,12 +247,10 @@ async function renderCard({ headline, category = 'জরুরি সতর্�
   return canvas.toBuffer('image/jpeg', { quality: 0.92 });
 }
 
-// Health Check
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Smart Tech Bangla High-Impact Card Generator API is running!' });
 });
 
-// Dynamic Card Endpoint
 app.get('/card', async (req, res) => {
   try {
     const headline = req.query.title || 'হোয়াটসঅ্যাপে অচেনা নাম্বার থেকে কল? এখনই এই সেটিংসটি অন করুন!';
@@ -266,3 +261,12 @@ app.get('/card', async (req, res) => {
     res.set('Content-Type', 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=3600');
     res.send(imageBuffer);
+  } catch (err) {
+    console.error('Render error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Viral Card Generator server running on port ${PORT}`);
+});
